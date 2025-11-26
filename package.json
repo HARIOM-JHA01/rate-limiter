@@ -23,6 +23,17 @@
   ],
   "author": "HARIOM-JHA01",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HARIOM-JHA01/rate-limiter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HARIOM-JHA01/rate-limiter/issues"
+  },
+  "homepage": "https://github.com/HARIOM-JHA01/rate-limiter#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "express": ">=4.17.0",
     "fastify": ">=4.0.0"
