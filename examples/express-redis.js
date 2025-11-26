@@ -1,48 +1,28 @@
 import express from 'express';
 import Redis from 'ioredis';
-import { expressRateLimitRedis } from '@hariom-jha/rate-limiter';
+import { expressMiddleware } from '../src/index.js';
 
 const app = express();
 const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
+  host: 'localhost',
+  port: 6379,
 });
 
-// Apply Redis-based rate limiting middleware
-// Allows 100 requests per minute per IP
-app.use(expressRateLimitRedis({
+// Redis-based distributed rate limiting
+app.use(expressMiddleware({
+  type: 'redis',
   redisClient: redis,
-  windowMs: 60000, // 1 minute
-  maxRequests: 100,
-  message: 'Rate limit exceeded. Please try again later.',
+  windowMs: 60 * 1000, // 1 minute
+  limit: 10, // 10 requests per minute
+  onLimit: (req, res) => {
+    res.status(429).json({ error: 'Rate limit exceeded' });
+  },
 }));
 
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Hello! This endpoint uses Redis-based rate limiting.',
-    info: 'This works across multiple server instances!',
-  });
+  res.send('Hello World!');
 });
 
-app.get('/api/heavy-operation', (req, res) => {
-  // Simulate a resource-intensive operation
-  res.json({ 
-    result: 'Operation completed',
-    timestamp: Date.now(),
-    info: 'This endpoint is protected by distributed rate limiting',
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Express server with Redis rate limiting running on http://localhost:${PORT}`);
-  console.log('Rate limit: 100 requests per minute (distributed across instances)');
-  console.log('Redis connection:', redis.status);
-});
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\nShutting down gracefully...');
-  await redis.quit();
-  process.exit(0);
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
 });

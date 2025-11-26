@@ -1,49 +1,25 @@
 import Fastify from 'fastify';
-import { fastifyRateLimit } from '@hariom-jha/rate-limiter';
+import { fastifyPlugin } from '../src/index.js';
 
 const fastify = Fastify({ logger: true });
 
-// Register rate limiting plugin
-// Allows 10 requests per 15 seconds per IP
-await fastify.register(fastifyRateLimit, {
-  windowMs: 15000, // 15 seconds
-  maxRequests: 10,
-  message: 'Too many requests from this IP, please slow down.',
+// Basic in-memory rate limiting
+await fastify.register(fastifyPlugin, {
+  type: 'in-memory',
+  inMemory: {
+    capacity: 10,
+    refillRate: 1,
+  },
+  onLimit: (request, reply) => {
+    reply.code(429).send({ error: 'Too many requests' });
+  },
 });
 
-fastify.get('/', async (request, reply) => {
-  return { 
-    message: 'Hello from Fastify!',
-    info: 'This endpoint is rate limited to 10 requests per 15 seconds',
-  };
-});
+fastify.get('/', async () => ({ hello: 'world' }));
 
-fastify.get('/api/users', async (request, reply) => {
-  return { 
-    users: [
-      { id: 1, name: 'Alice' },
-      { id: 2, name: 'Bob' },
-    ],
-  };
-});
-
-fastify.post('/api/data', async (request, reply) => {
-  return { 
-    success: true,
-    data: request.body,
-    timestamp: Date.now(),
-  };
-});
-
-const start = async () => {
-  try {
-    await fastify.listen({ port: 3000, host: '0.0.0.0' });
-    console.log('Fastify server running on http://localhost:3000');
-    console.log('Rate limit: 10 requests per 15 seconds');
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-};
-
-start();
+try {
+  await fastify.listen({ port: 3000 });
+} catch (err) {
+  fastify.log.error(err);
+  process.exit(1);
+}
